@@ -1,0 +1,20 @@
+{
+  "domain": "baxi_thermostat",
+  "name": "BAXI Thermostat",
+  "config_flow": false,
+  "documentation": "https://github.com/vipial1/BAXI_thermostat",
+  "dependencies": [
+    "sensor",
+    "switch"
+  ],
+  "requirements": [],
+  "ssdp": [],
+  "zeroconf": [],
+  "homekit": {},
+  "dependencies": [],
+  "codeowners": [
+    "@vipial1"
+  ],
+  "iot_class": "cloud_polling",
+  "version": "1.0"
+}
