@@ -1,5 +1,7 @@
 import logging
-from homeassistant.components.climate.const import HVAC_MODE_HEAT
+from homeassistant.components.climate.const import (
+    HVAC_MODE_OFF,
+)
 from homeassistant.helpers.reload import async_setup_reload_service
 from homeassistant.components.climate import PLATFORM_SCHEMA, ClimateEntity
 from homeassistant.helpers.restore_state import RestoreEntity
@@ -11,7 +13,7 @@ from homeassistant.helpers.typing import (
 from datetime import timedelta
 from typing import Any, Callable, Dict, Optional
 from .const import DOMAIN, PLATFORM, PRESET_MODES, HVAC_MODES
-from .helper import convert_preset_mode
+from .helper import convert_preset_mode, convert_hvac_mode
 from homeassistant.const import (
     CONF_NAME,
     CONF_USERNAME,
@@ -23,7 +25,7 @@ from .config_schema import SUPPORT_FLAGS, CLIMATE_SCHEMA, CONF_PAIR_CODE
 from .BaxiAPI import BaxiAPI
 
 _LOGGER = logging.getLogger(__name__)
-SCAN_INTERVAL = timedelta(seconds=10)
+SCAN_INTERVAL = timedelta(seconds=30)
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(CLIMATE_SCHEMA)
 
 
@@ -66,7 +68,7 @@ class BaxiThermostat(ClimateEntity, RestoreEntity):
         self._preset_mode_list = PRESET_MODES
         self._attr_preset_mode = None
         self._attr_hvac_modes = HVAC_MODES
-        self._hvac_action = HVAC_MODE_HEAT
+        self._attr_hvac_mode = HVAC_MODE_OFF
 
     @property
     def should_poll(self):
@@ -123,25 +125,27 @@ class BaxiThermostat(ClimateEntity, RestoreEntity):
         return self._attrs
 
     @property
-    def hvac_action(self):
-        """Return the current running hvac operation if supported.
-
-        Need to be one of CURRENT_HVAC_*.
-        """
-        return self._hvac_action
+    def hvac_mode(self) -> str:
+        """Return current operation."""
+        return self._attr_hvac_mode
 
     async def async_update(self):
         await self.baxi_api.bootstrap()
         status = await self.baxi_api.get_status()
 
-        if not status:
-            return
+        if status:
+            self._cur_temp = status["roomTemperature"]["value"]
+            self._unit = status["roomTemperature"]["unit"]
+            self._target_temp = status["roomTemperatureSetpoint"]["value"]
+            self._attr_preset_mode = convert_preset_mode(
+                status["mode"], status["timeProgram"]
+            )
 
-        self._cur_temp = status["roomTemperature"]["value"]
-        self._unit = status["roomTemperature"]["unit"]
-        self._target_temp = status["roomTemperatureSetpoint"]["value"]
-        self._state = status["mode"]
-        self._attr_preset_mode = convert_preset_mode(status["mode"])
+        operating_mode = await self.baxi_api.get_operating_mode()
+
+        if operating_mode:
+            self._attr_hvac_mode = convert_hvac_mode(operating_mode["mode"])
+            self._state = self._attr_hvac_mode
 
     async def async_set_temperature(self, **kwargs):
         """Set new target temperature."""
@@ -150,3 +154,6 @@ class BaxiThermostat(ClimateEntity, RestoreEntity):
             return
         await self.baxi_api.set_target_temperature(temperature)
         await self.async_update_ha_state()
+
+    async def async_set_hvac_mode(self, hvac_mode):
+        _LOGGER.warning("Not implemented yet")

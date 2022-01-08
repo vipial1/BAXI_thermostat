@@ -157,6 +157,11 @@ class BaxiAPI:
 
         self.info = await self.async_get_request(api_endpoint)
 
+    async def get_operating_mode(self):
+        api_endpoint = self.endpoints["operatingMode"]
+
+        return await self.async_get_request(api_endpoint)
+
     def get_device_information(self):
         return self.info
 
