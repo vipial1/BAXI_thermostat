@@ -124,7 +124,7 @@ class BaxiAPI:
         )
 
         if not response.ok:
-            # handle error
+            # TODO handle error
             return None
 
         return response.json()

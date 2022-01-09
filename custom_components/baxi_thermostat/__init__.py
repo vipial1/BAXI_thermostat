@@ -1,26 +1,27 @@
 """The BAXI Thermostat integration."""
 
+from .BaxiAPI import BaxiAPI
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
-from .const import VERSION, DOMAIN, PLATFORM, ISSUE_URL
-
+from .const import DOMAIN, PLATFORM
+from homeassistant.const import CONF_USERNAME, CONF_PASSWORD
+from .config_schema import CONF_PAIR_CODE
 
 PLATFORMS: list[str] = [PLATFORM]
 
 
 async def async_setup(hass: HomeAssistant, config) -> bool:
-    data = hass.data.get("custom_components").get("baxi_thermostat")
-    return True
-
-
-async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-    """Set up Baxi Thermostat from a config entry."""
-    # TODO Store an API object for your platforms to access
-    # hass.data[DOMAIN][entry.entry_id] = MyApi(...)
-    entry.get(PLATFORM)[0]
-    hass.config_entries.async_setup_platforms(entry, PLATFORMS)
-
-    return True
+    platform_configs = config.get(PLATFORM, [])
+    for platform_config in platform_configs:
+        if platform_config.get("platform", False) == DOMAIN:
+            user = config.get(CONF_USERNAME)
+            password = config.get(CONF_PASSWORD)
+            pairing_code = config.get(CONF_PAIR_CODE)
+            api = BaxiAPI(hass, user, password, pairing_code)
+            await api.bootstrap()
+            hass.data[DOMAIN] = api
+            return True
+    return False
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:

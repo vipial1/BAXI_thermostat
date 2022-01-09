@@ -12,6 +12,8 @@ STORAGE_KEY = "baxiapi"
 
 # Defaults
 DEFAULT_NAME = "Baxi Thermostat"
+DEVICE_MODEL = "TXM 10C"
+DEVICE_MANUFACTER = "Baxi"
 
 PRESET_MODE_MANUAL = "Manual"
 PRESET_MODE_SCHEDULE_1 = "Schedule 1"
