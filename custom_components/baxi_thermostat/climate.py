@@ -12,21 +12,15 @@ from homeassistant.helpers.typing import (
 )
 from datetime import timedelta
 from typing import Any, Callable, Dict, Optional
-from .const import (
-    DOMAIN,
-    PLATFORM,
-    PRESET_MODES,
-    HVAC_MODES,
-    DEVICE_MODEL,
-    DEVICE_MANUFACTER,
-)
-from .helper import convert_preset_mode, convert_hvac_mode
+from .const import *
+from .helper import *
 from homeassistant.const import (
     CONF_NAME,
     ATTR_TEMPERATURE,
 )
 
 from .config_schema import SUPPORT_FLAGS, CLIMATE_SCHEMA
+from .BaxiAPI import BaxiAPI
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.device_registry import DeviceEntryType
 
@@ -58,7 +52,7 @@ class BaxiThermostat(ClimateEntity, RestoreEntity):
         """Initialize the thermostat."""
         super().__init__()
         self.hass = hass
-        self._baxi_api = hass.data[DOMAIN]
+        self._baxi_api = hass.data[PLATFORM]
         self._attr_name = config.get(CONF_NAME)
         self._attr_unique_id = config.get(CONF_NAME)
         self._attr_supported_features = SUPPORT_FLAGS
@@ -101,7 +95,7 @@ class BaxiThermostat(ClimateEntity, RestoreEntity):
             self._attr_current_temperature = status["roomTemperature"]["value"]
             self._attr_temperature_unit = status["roomTemperature"]["unit"]
             self._attr_target_temperature = status["roomTemperatureSetpoint"]["value"]
-            self._attr_preset_mode = convert_preset_mode(
+            self._attr_preset_mode = preset_mode_baxi_to_ha(
                 status["mode"], status["timeProgram"]
             )
             next_switch = status.get("nextSwitch", None)
@@ -110,6 +104,12 @@ class BaxiThermostat(ClimateEntity, RestoreEntity):
                 self._attr_extra_state_attributes["next_temp"] = next_switch[
                     "roomTemperatureSetpoint"
                 ]["value"]
+                self.next_switch_days = next_switch[
+                    "dayOffset"
+                ]  # we just need to store this
+            else:
+                self._attr_extra_state_attributes.pop("next_change", None)
+                self._attr_extra_state_attributes.pop("next_temp", None)
 
         operating_mode = await self._baxi_api.get_operating_mode()
 
@@ -121,8 +121,29 @@ class BaxiThermostat(ClimateEntity, RestoreEntity):
         temperature = kwargs.get(ATTR_TEMPERATURE)
         if temperature is None:
             return
-        await self._baxi_api.set_target_temperature(temperature)
+
+        next_change = self._attr_extra_state_attributes.get("next_change", None)
+
+        if next_change:
+            # We are in scheduled mode, need to create a temporary override
+            override_date = create_override_date(next_change, self.next_switch_days)
+            await self._baxi_api.set_override_temperature(temperature, override_date)
+        else:
+            # Manual mode, it is fine to modify the temp
+            await self._baxi_api.set_target_temperature(temperature)
         await self.async_update_ha_state()
 
     async def async_set_hvac_mode(self, hvac_mode):
-        _LOGGER.warning("Not implemented yet")
+        target_baxi_mode = hvac_mode_ha_to_baxi(hvac_mode)
+        await self._baxi_api.set_operating_mode(target_baxi_mode)
+        await self.async_update_ha_state()
+
+    async def async_set_preset_mode(self, preset_mode):
+        baxi_preset_mode, program = self._attr_preset_mode = preset_mode_ha_to_baxi(
+            preset_mode
+        )
+        if baxi_preset_mode == BAXI_PRESET_SCHEDULE:
+            await self._baxi_api.set_schedule(program)
+        elif baxi_preset_mode == BAXI_PRESET_MANUAL:
+            await self._baxi_api.set_target_temperature(self._attr_target_temperature)
+        await self.async_update_ha_state()

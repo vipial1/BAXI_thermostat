@@ -1,5 +1,5 @@
 # BAXI THERMOSTAT
-This component provides integration with Baxi branded thermostat (**ONLY TESTED WITH [TXM 10](https://www.baxi.es/productos/termostatos-regulacion/baxi-connect/baxi-connect)**)
+This component provides integration with Baxi branded thermostat (**ONLY TESTED WITH [TXM](https://www.baxi.es/productos/termostatos-regulacion/baxi-connect/baxi-connect)**)
 ## HOW TO INSTALL
 It is planned to enable HACS integration soon. Until then, please, copy `baxi_thermostat` into your `custom_components` folder
 
@@ -22,8 +22,6 @@ Integration will create a climate entity, that will look like this in Lovelace:
 
 
 ## WORK IN PROGRESS
-- HVAC can not be set from HA (missing parameters to send)
-- Preset can not be set from HA (missing parameters to send)
 - Super huge refactor (code is completely shitty now)
 - Lots (seriously, lots) of bugs to be fixed.
 - Multidevice not tested, probably not working

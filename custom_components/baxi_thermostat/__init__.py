@@ -11,15 +11,15 @@ PLATFORMS: list[str] = [PLATFORM]
 
 
 async def async_setup(hass: HomeAssistant, config) -> bool:
-    platform_configs = config.get(PLATFORM, [])
-    for platform_config in platform_configs:
-        if platform_config.get("platform", False) == DOMAIN:
-            user = platform_config.get(CONF_USERNAME)
-            password = platform_config.get(CONF_PASSWORD)
-            pairing_code = platform_config.get(CONF_PAIR_CODE)
+    domain_configs = config.get(DOMAIN, [])
+    for domain_config in domain_configs:
+        if domain_config.get("platform", False) == PLATFORM:
+            user = domain_config.get(CONF_USERNAME)
+            password = domain_config.get(CONF_PASSWORD)
+            pairing_code = domain_config.get(CONF_PAIR_CODE)
             api = BaxiAPI(hass, user, password, pairing_code)
             await api.bootstrap()
-            hass.data[DOMAIN] = api
+            hass.data[PLATFORM] = api
             return True
     return False
 

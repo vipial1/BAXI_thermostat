@@ -2,6 +2,9 @@ from attr import has
 import requests
 from typing import cast
 from .const import STORAGE_VERSION, STORAGE_KEY
+import logging
+
+_LOGGER = logging.getLogger(__name__)
 
 
 class BaxiAPI:
@@ -23,6 +26,7 @@ class BaxiAPI:
         "CONNECTION": BASE_URL + "/system/gateway/connection",
         "CAPABILITIES": BASE_URL + "/capabilities",
     }
+    capabilities = {}
 
     def __init__(self, hass, user, password, pairing_code):
         self.hass_storage = hass.helpers.storage.Store(
@@ -83,37 +87,37 @@ class BaxiAPI:
         await self._store_token(token)
 
     def _sync_request(self, request, url, headers, payload=None):
-        if request == "get":
-            return requests.get(url=url, headers=headers)
-        elif request == "put":
-            return requests.put(url=url, json=payload, headers=headers)
-        elif request == "post":
-            return requests.post(url=url, json=payload, headers=headers)
+        try:
+            if request == "get":
+                response = requests.get(url=url, headers=headers)
+            elif request == "put":
+                response = requests.put(url=url, json=payload, headers=headers)
+            elif request == "post":
+                response = requests.post(url=url, json=payload, headers=headers)
+        except Exception as e:
+            _LOGGER.exception(f"EXCEPTION with {request} request to {url}:", e)
+            raise e
+
+        if not response.ok:
+            _LOGGER.error(
+                f"ERROR with {request} request to {url}: {response.status_code}"
+            )
+        return response
 
     async def async_post_request(self, endpoint, payload, headers=BASE_HEADER):
 
-        response = await self.hass.async_add_executor_job(
+        return await self.hass.async_add_executor_job(
             self._sync_request, "post", endpoint, headers, payload
         )
-
-        if not response.ok:
-            # handle error
-            return None
-        return response
 
     async def async_put_request(self, endpoint, payload, headers=BASE_HEADER):
 
         headers = headers.copy()
         headers["X-Bdr-Pairing-Token"] = self.token
 
-        response = await self.hass.async_add_executor_job(
+        return await self.hass.async_add_executor_job(
             self._sync_request, "put", endpoint, headers, payload
         )
-
-        if not response.ok:
-            # handle error
-            return None
-        return response
 
     async def async_get_request(self, endpoint, headers=BASE_HEADER):
 
@@ -123,11 +127,6 @@ class BaxiAPI:
         response = await self.hass.async_add_executor_job(
             self._sync_request, "get", endpoint, headers
         )
-
-        if not response.ok:
-            # TODO handle error
-            return None
-
         return response.json()
 
     async def connection_status(self):
@@ -142,24 +141,21 @@ class BaxiAPI:
 
         capabilities = await self.async_get_request(api_endpoint)
 
-        for subsystem in capabilities.values():
+        for subsystem_name, subsystem in capabilities.items():
             subsystem = (
                 subsystem[0] if isinstance(subsystem, list) else subsystem
             )  # TODO: what if empty list?
+            self.capabilities[subsystem_name] = {}
             for function, uri in subsystem.items():
-                if function.endswith("Uri") and function != "uri":
-                    function = function.replace("Uri", "")
-                    if function == "status" and "producers" in uri:
-                        function = "producer_status"
-                    self.endpoints[function] = self.BASE_URL + uri
+                self.capabilities[subsystem_name][function] = self.BASE_URL + str(uri)
 
     async def _load_device_information(self):
-        api_endpoint = self.endpoints["deviceInformation"]
+        api_endpoint = self.capabilities["system"]["deviceInformationUri"]
 
         self.info = await self.async_get_request(api_endpoint)
 
     async def get_operating_mode(self):
-        api_endpoint = self.endpoints["operatingMode"]
+        api_endpoint = self.capabilities["system"]["operatingModeUri"]
 
         return await self.async_get_request(api_endpoint)
 
@@ -170,13 +166,39 @@ class BaxiAPI:
         return self._bootstraped
 
     async def get_status(self):
-        api_endpoint = self.endpoints.get("status")
+        api_endpoint = self.capabilities["centralHeatingZones"]["statusUri"]
 
         return await self.async_get_request(api_endpoint)
 
     async def set_target_temperature(self, target_temp):
-        api_endpoint = self.endpoints.get("putSetpointManual")
+        api_endpoint = self.capabilities["centralHeatingZones"]["putSetpointManual"]
         payload = {
             "roomTemperatureSetpoint": target_temp,
+        }
+        return await self.async_put_request(api_endpoint, payload)
+
+    async def set_override_temperature(self, target_temp, override_end):
+        api_endpoint = self.capabilities["centralHeatingZones"][
+            "putSetpointTemporaryOverrideUri"
+        ]
+        payload = {
+            "roomTemperatureSetpoint": target_temp,
+            "temporaryOverrideEnd": override_end,
+        }
+        return await self.async_put_request(api_endpoint, payload)
+
+    async def set_schedule(self, schedule_program):
+        api_endpoint = self.capabilities["centralHeatingZones"][
+            "putSetpointScheduleUri"
+        ]
+        payload = {
+            "currentHeatingTimeProgram": schedule_program,
+        }
+        return await self.async_put_request(api_endpoint, payload)
+
+    async def set_operating_mode(self, mode):
+        api_endpoint = self.capabilities["system"]["operatingModeUri"]
+        payload = {
+            "mode": mode,
         }
         return await self.async_put_request(api_endpoint, payload)
