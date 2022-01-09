@@ -39,8 +39,8 @@ class BaxiAPI:
             return
 
         if not await self._load_stored_token():
-            self._login()
-            self._pair()
+            await self._login()
+            await self._pair()
 
         await self._load_capabilities()
         await self._load_device_information()
@@ -54,6 +54,7 @@ class BaxiAPI:
     async def _store_token(self, token):
         data = {"token": token}
         await self.hass_storage.async_save(data)
+        self.token = token
 
     async def _login(self):
         api_endpoint = self.endpoints["LOGIN"]
@@ -78,8 +79,8 @@ class BaxiAPI:
 
         response = await self.async_post_request(endpoint=api_endpoint, payload=payload)
 
-        token = await response.json().get("token", None)
-        self._store_token(token)
+        token = response.json().get("token", None)
+        await self._store_token(token)
 
     def _sync_request(self, request, url, headers, payload=None):
         if request == "get":

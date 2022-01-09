@@ -14,9 +14,9 @@ async def async_setup(hass: HomeAssistant, config) -> bool:
     platform_configs = config.get(PLATFORM, [])
     for platform_config in platform_configs:
         if platform_config.get("platform", False) == DOMAIN:
-            user = config.get(CONF_USERNAME)
-            password = config.get(CONF_PASSWORD)
-            pairing_code = config.get(CONF_PAIR_CODE)
+            user = platform_config.get(CONF_USERNAME)
+            password = platform_config.get(CONF_PASSWORD)
+            pairing_code = platform_config.get(CONF_PAIR_CODE)
             api = BaxiAPI(hass, user, password, pairing_code)
             await api.bootstrap()
             hass.data[DOMAIN] = api
