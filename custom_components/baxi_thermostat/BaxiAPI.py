@@ -38,7 +38,7 @@ class BaxiAPI:
         if self._bootstraped:
             return
 
-        if not await self._load_stored_token():
+        if not await self._load_stored_token() or not await self.connection_status():
             await self._login()
             await self._pair()
 
@@ -135,7 +135,7 @@ class BaxiAPI:
 
         response = await self.async_get_request(api_endpoint)
 
-        return response.get("status") == "connected_to_appliance"
+        return response and response.get("status") == "connected_to_appliance"
 
     async def _load_capabilities(self):
         api_endpoint = self.endpoints["CAPABILITIES"]
