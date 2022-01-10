@@ -20,7 +20,7 @@ from homeassistant.components.sensor import (
 )
 
 _LOGGER = logging.getLogger(__name__)
-SCAN_INTERVAL = timedelta(seconds=30)
+SCAN_INTERVAL = timedelta(minutes=10)
 
 
 async def async_setup_platform(
@@ -67,7 +67,9 @@ class BaxiEnergyConsumptionSensor(SensorEntity, RestoreEntity):
 
     async def async_update(self):
         consumptions = await self._baxi_api.get_consumptions()
-        consumption = consumptions[self._consumption_type]
+        consumption = consumptions.get(self._consumption_type, None)
+        if not consumption:
+            return
         self._attr_native_unit_of_measurement = consumption["unit"]
         self._attr_native_value = int(consumption["value"])
 

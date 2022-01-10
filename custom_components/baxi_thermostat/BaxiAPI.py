@@ -142,9 +142,11 @@ class BaxiAPI:
         capabilities = await self.async_get_request(api_endpoint)
 
         for subsystem_name, subsystem in capabilities.items():
-            subsystem = (
-                subsystem[0] if isinstance(subsystem, list) else subsystem
-            )  # TODO: what if empty list?
+            if isinstance(subsystem, list):
+                if len(subsystem) > 0:
+                    subsystem = subsystem[0]
+                else:
+                    continue
             self.capabilities[subsystem_name] = {}
             for function, uri in subsystem.items():
                 self.capabilities[subsystem_name][function] = self.BASE_URL + str(uri)
