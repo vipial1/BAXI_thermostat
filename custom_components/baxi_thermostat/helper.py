@@ -46,7 +46,7 @@ def preset_mode_ha_to_baxi(ha_mode):
         return BAXI_PRESET_SCHEDULE, "3"
 
 
-def convert_hvac_mode(raw_mode):
+def hvac_mode_baxi_to_ha(raw_mode):
     if raw_mode == "off":
         return HVAC_MODE_OFF
     elif raw_mode == "heating-auto":

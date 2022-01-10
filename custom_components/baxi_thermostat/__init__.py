@@ -3,11 +3,14 @@
 from .BaxiAPI import BaxiAPI
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
-from .const import DOMAIN, PLATFORM
-from homeassistant.const import CONF_USERNAME, CONF_PASSWORD
+from .const import *
+from homeassistant.const import CONF_USERNAME, CONF_PASSWORD, Platform
 from .config_schema import CONF_PAIR_CODE
 
-PLATFORMS: list[str] = [PLATFORM]
+PLATFORMS = [
+    Platform.CLIMATE,
+    Platform.SENSOR,
+]
 
 
 async def async_setup(hass: HomeAssistant, config) -> bool:
@@ -19,7 +22,13 @@ async def async_setup(hass: HomeAssistant, config) -> bool:
             pairing_code = domain_config.get(CONF_PAIR_CODE)
             api = BaxiAPI(hass, user, password, pairing_code)
             await api.bootstrap()
-            hass.data[PLATFORM] = api
+            hass.data[PLATFORM] = {DATA_KEY_API: api, DAYA_KEY_CONFIG: domain_config}
+            await hass.helpers.discovery.async_load_platform(
+                Platform.SENSOR, PLATFORM, {}, config
+            )
+            await hass.helpers.discovery.async_load_platform(
+                Platform.CLIMATE, PLATFORM, {}, config
+            )
             return True
     return False
 

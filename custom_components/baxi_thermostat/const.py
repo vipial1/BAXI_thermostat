@@ -4,12 +4,15 @@ from homeassistant.components.climate.const import HVAC_MODE_AUTO, HVAC_MODE_OFF
 # Generic
 
 VERSION = "1.0"
-DOMAIN = "baxi_thermostat"
-PLATFORM = "climate"
+DOMAIN = "climate"
+PLATFORM = "baxi_thermostat"
 ISSUE_URL = "https://github.com/vipial1/BAXI_thermostat"
 
 STORAGE_VERSION = 1
 STORAGE_KEY = "baxiapi"
+
+DATA_KEY_API = "api"
+DAYA_KEY_CONFIG = "config"
 
 # Defaults
 DEFAULT_NAME = "Baxi Thermostat"

@@ -20,7 +20,6 @@ from homeassistant.const import (
 )
 
 from .config_schema import SUPPORT_FLAGS, CLIMATE_SCHEMA
-from .BaxiAPI import BaxiAPI
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.device_registry import DeviceEntryType
 
@@ -36,13 +35,18 @@ async def async_setup_platform(
     discovery_info: Optional[DiscoveryInfoType] = None,
 ) -> None:
 
+    config = hass.data[PLATFORM].get(DAYA_KEY_CONFIG)
+
     """Add BaxiThermostat entities from configuration.yaml."""
     _LOGGER.info(
         "Setup entity coming from configuration.yaml named: %s", config.get(CONF_NAME)
     )
 
     await async_setup_reload_service(hass, DOMAIN, PLATFORM)
-    async_add_entities([BaxiThermostat(hass, config)], update_before_add=True)
+    async_add_entities(
+        [BaxiThermostat(hass, config)],
+        update_before_add=True,
+    )
 
 
 class BaxiThermostat(ClimateEntity, RestoreEntity):
@@ -52,7 +56,7 @@ class BaxiThermostat(ClimateEntity, RestoreEntity):
         """Initialize the thermostat."""
         super().__init__()
         self.hass = hass
-        self._baxi_api = hass.data[PLATFORM]
+        self._baxi_api = hass.data[PLATFORM].get(DATA_KEY_API)
         self._attr_name = config.get(CONF_NAME)
         self._attr_unique_id = config.get(CONF_NAME)
         self._attr_supported_features = SUPPORT_FLAGS
@@ -60,6 +64,7 @@ class BaxiThermostat(ClimateEntity, RestoreEntity):
         self._attr_hvac_modes = HVAC_MODES
         self._attr_hvac_mode = HVAC_MODE_OFF
         self._attr_extra_state_attributes = {}
+        self._attr_should_poll = True
         self.set_device_info()
 
     def set_device_info(self):
@@ -72,11 +77,6 @@ class BaxiThermostat(ClimateEntity, RestoreEntity):
             sw_version=info["softwareVersion"],
             hw_version=info["hardwareVersion"],
         )
-
-    @property
-    def should_poll(self):
-        """Return the polling state."""
-        return True
 
     @property
     def available(self) -> bool:
@@ -114,7 +114,7 @@ class BaxiThermostat(ClimateEntity, RestoreEntity):
         operating_mode = await self._baxi_api.get_operating_mode()
 
         if operating_mode:
-            self._attr_hvac_mode = convert_hvac_mode(operating_mode["mode"])
+            self._attr_hvac_mode = hvac_mode_baxi_to_ha(operating_mode["mode"])
 
     async def async_set_temperature(self, **kwargs):
         """Set new target temperature."""

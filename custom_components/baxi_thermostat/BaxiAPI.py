@@ -202,3 +202,8 @@ class BaxiAPI:
             "mode": mode,
         }
         return await self.async_put_request(api_endpoint, payload)
+
+    async def get_consumptions(self):
+        api_endpoint = self.capabilities["producers"]["energyConsumptionUri"]
+
+        return await self.async_get_request(api_endpoint)
