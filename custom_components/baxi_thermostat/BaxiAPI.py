@@ -173,7 +173,7 @@ class BaxiAPI:
         return await self.async_get_request(api_endpoint)
 
     async def set_target_temperature(self, target_temp):
-        api_endpoint = self.capabilities["centralHeatingZones"]["putSetpointManual"]
+        api_endpoint = self.capabilities["centralHeatingZones"]["putSetpointManualUri"]
         payload = {
             "roomTemperatureSetpoint": target_temp,
         }
