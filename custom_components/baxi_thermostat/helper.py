@@ -1,4 +1,6 @@
+from homeassistant.config_entries import ConfigEntry
 from .const import (
+    PLATFORM,
     PRESET_MODE_HOLIDAY,
     PRESET_MODE_MANUAL,
     PRESET_MODE_SCHEDULE_1,

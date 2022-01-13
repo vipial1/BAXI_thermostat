@@ -35,16 +35,25 @@ async def async_setup_platform(
     discovery_info: Optional[DiscoveryInfoType] = None,
 ) -> None:
 
-    config = hass.data[PLATFORM].get(DAYA_KEY_CONFIG)
+    config = hass.data[PLATFORM].get(DATA_KEY_CONFIG)
 
     """Add BaxiThermostat entities from configuration.yaml."""
-    _LOGGER.info(
-        "Setup entity coming from configuration.yaml named: %s", config.get(CONF_NAME)
+    _LOGGER.warning(
+        "Setup entity coming from configuration.yaml named: %s. Device will not be created, only entities",
+        config.get(CONF_NAME),
     )
-
     await async_setup_reload_service(hass, DOMAIN, PLATFORM)
     async_add_entities(
         [BaxiThermostat(hass, config)],
+        update_before_add=True,
+    )
+
+
+async def async_setup_entry(hass, config_entry, async_add_devices):
+    """Add BaxiThermostat entities from user config"""
+    await async_setup_reload_service(hass, DOMAIN, PLATFORM)
+    async_add_devices(
+        [BaxiThermostat(hass, config_entry.data)],
         update_before_add=True,
     )
 
@@ -61,32 +70,27 @@ class BaxiThermostat(ClimateEntity, RestoreEntity):
         self._attr_unique_id = config.get(CONF_NAME)
         self._attr_supported_features = SUPPORT_FLAGS
         self._attr_preset_modes = PRESET_MODES
-        self._attr_hvac_modes = HVAC_MODES
-        self._attr_hvac_mode = HVAC_MODE_OFF
+        self._attr_hvac_modes = (
+            HVAC_MODES
+            if self._baxi_api.is_feature_enabled(FEATURE_OPERATING_MODE)
+            else [HVAC_MODE_AUTO]
+        )
+        self._attr_hvac_mode = HVAC_MODE_AUTO
         self._attr_extra_state_attributes = {}
         self._attr_should_poll = True
-        self.set_device_info()
-
-    def set_device_info(self):
-        info = self._baxi_api.get_device_information()
-        self._attr_device_info = DeviceInfo(
-            entry_type=DeviceEntryType.SERVICE,
-            manufacturer=DEVICE_MANUFACTER,
-            name=info["name"],
-            model=DEVICE_MODEL,
-            sw_version=info["softwareVersion"],
-            hw_version=info["hardwareVersion"],
-        )
+        self._attr_device_info = {
+            "identifiers": {
+                (
+                    SERIAL_KEY,
+                    self._baxi_api.get_device_information().get(SERIAL_KEY, "1234"),
+                )
+            }
+        }
 
     @property
     def available(self) -> bool:
         """Return True if entity is available."""
         return self._baxi_api.is_bootstraped()
-
-    @property
-    def extra_state_attributes(self):
-        """Return entity specific state attributes."""
-        return self._attr_extra_state_attributes
 
     async def async_update(self):
         status = await self._baxi_api.get_status()
@@ -111,10 +115,11 @@ class BaxiThermostat(ClimateEntity, RestoreEntity):
                 self._attr_extra_state_attributes.pop("next_change", None)
                 self._attr_extra_state_attributes.pop("next_temp", None)
 
-        operating_mode = await self._baxi_api.get_operating_mode()
+        if self._baxi_api.is_feature_enabled(FEATURE_OPERATING_MODE):
+            operating_mode = await self._baxi_api.get_operating_mode()
 
-        if operating_mode:
-            self._attr_hvac_mode = hvac_mode_baxi_to_ha(operating_mode["mode"])
+            if operating_mode:
+                self._attr_hvac_mode = hvac_mode_baxi_to_ha(operating_mode["mode"])
 
     async def async_set_temperature(self, **kwargs):
         """Set new target temperature."""

@@ -1,7 +1,7 @@
 {
   "domain": "baxi_thermostat",
   "name": "BAXI Thermostat",
-  "config_flow": false,
+  "config_flow": true,
   "documentation": "https://github.com/vipial1/BAXI_thermostat",
   "requirements": [],
   "ssdp": [],

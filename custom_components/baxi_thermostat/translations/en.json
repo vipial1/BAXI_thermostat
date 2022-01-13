@@ -1,0 +1,17 @@
+{
+    "config": {
+        "title": "Baxi thermostat",
+        "step": {
+            "user": {
+                "title": "Baxi thermostat - configuration",
+                "description": "Set configuration parameters as in your BAXI app. Documentation at https://github.com/vipial1/BAXI_thermostat",
+                "data": {
+                    "name": "Thermostat name",
+                    "username": "Email or username",
+                    "password": "Password",
+                    "pairing_code": "Pairing code"
+                }
+            }
+        }
+    }
+}

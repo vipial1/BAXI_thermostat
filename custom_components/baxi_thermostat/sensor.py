@@ -30,11 +30,12 @@ async def async_setup_platform(
     discovery_info: Optional[DiscoveryInfoType] = None,
 ) -> None:
 
-    config = hass.data[PLATFORM].get(DAYA_KEY_CONFIG)
+    config = hass.data[PLATFORM].get(DATA_KEY_CONFIG)
 
     """Add BaxiEnergyConsumptionSensor entities from configuration.yaml."""
-    _LOGGER.info(
-        "Setup entity coming from configuration.yaml named: %s", config.get(CONF_NAME)
+    _LOGGER.warning(
+        "Setup entity coming from configuration.yaml named: %s. Device will not be created, only entities",
+        config.get(CONF_NAME),
     )
 
     await async_setup_reload_service(hass, "sensor", PLATFORM)
@@ -42,6 +43,17 @@ async def async_setup_platform(
         [
             HeaterBaxiEnergyConsumptionSensor(hass, config),
             HotWaterBaxiEnergyConsumptionSensor(hass, config),
+        ],
+        update_before_add=True,
+    )
+
+
+async def async_setup_entry(hass, config_entry, async_add_devices):
+    await async_setup_reload_service(hass, DOMAIN, PLATFORM)
+    async_add_devices(
+        [
+            HeaterBaxiEnergyConsumptionSensor(hass, config_entry.data),
+            HotWaterBaxiEnergyConsumptionSensor(hass, config_entry.data),
         ],
         update_before_add=True,
     )
@@ -59,6 +71,14 @@ class BaxiEnergyConsumptionSensor(SensorEntity, RestoreEntity):
         self._attr_state_class = SensorStateClass.TOTAL_INCREASING
         self._attr_should_poll = True
         self._consumption_type = consumption_type
+        self._attr_device_info = {
+            "identifiers": {
+                (
+                    SERIAL_KEY,
+                    self._baxi_api.get_device_information().get("serial", "1234"),
+                )
+            }
+        }
 
     @property
     def available(self) -> bool:

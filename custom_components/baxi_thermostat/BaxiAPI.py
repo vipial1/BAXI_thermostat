@@ -1,7 +1,7 @@
 from attr import has
 import requests
 from typing import cast
-from .const import STORAGE_VERSION, STORAGE_KEY
+from .const import *
 import logging
 
 _LOGGER = logging.getLogger(__name__)
@@ -150,6 +150,21 @@ class BaxiAPI:
             self.capabilities[subsystem_name] = {}
             for function, uri in subsystem.items():
                 self.capabilities[subsystem_name][function] = self.BASE_URL + str(uri)
+
+    def is_feature_enabled(self, feature):
+        if feature == FEATURE_OPERATING_MODE:
+            return (
+                self.capabilities.get("system", {}).get("operatingModeUri", None)
+                is not None
+            )
+        elif feature == FEATURE_ENERGY_CONSUMPTION:
+            return (
+                self.capabilities.get("producers", {}).get("energyConsumptionUri", None)
+                is not None
+            )
+        else:
+            logging.warning(f"Feature {feature} not enable")
+        return False
 
     async def _load_device_information(self):
         api_endpoint = self.capabilities["system"]["deviceInformationUri"]

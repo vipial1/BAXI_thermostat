@@ -4,8 +4,9 @@ from .BaxiAPI import BaxiAPI
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from .const import *
-from homeassistant.const import CONF_USERNAME, CONF_PASSWORD, Platform
+from homeassistant.const import CONF_NAME, CONF_USERNAME, CONF_PASSWORD, Platform
 from .config_schema import CONF_PAIR_CODE
+from homeassistant.helpers import device_registry as dr
 
 PLATFORMS = [
     Platform.CLIMATE,
@@ -17,31 +18,63 @@ async def async_setup(hass: HomeAssistant, config) -> bool:
     domain_configs = config.get(DOMAIN, [])
     for domain_config in domain_configs:
         if domain_config.get("platform", False) == PLATFORM:
-            user = domain_config.get(CONF_USERNAME)
-            password = domain_config.get(CONF_PASSWORD)
-            pairing_code = domain_config.get(CONF_PAIR_CODE)
-            api = BaxiAPI(hass, user, password, pairing_code)
-            await api.bootstrap()
-            hass.data[PLATFORM] = {DATA_KEY_API: api, DAYA_KEY_CONFIG: domain_config}
-            await hass.helpers.discovery.async_load_platform(
-                Platform.SENSOR, PLATFORM, {}, config
+            api = BaxiAPI(
+                hass,
+                domain_config.get(CONF_USERNAME),
+                domain_config.get(CONF_PASSWORD),
+                domain_config.get(CONF_PAIR_CODE),
             )
+            await api.bootstrap()
+            hass.data[PLATFORM] = {DATA_KEY_API: api, DATA_KEY_CONFIG: domain_config}
+            if api.is_feature_enabled(FEATURE_ENERGY_CONSUMPTION):
+                await hass.helpers.discovery.async_load_platform(
+                    Platform.SENSOR, PLATFORM, {}, config
+                )
             await hass.helpers.discovery.async_load_platform(
                 Platform.CLIMATE, PLATFORM, {}, config
             )
             return True
-    return False
+    return True
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Unload a config entry."""
     unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
     if unload_ok:
-        hass.data[DOMAIN].pop(entry.entry_id)
+        hass.data.pop(PLATFORM, None)
 
     return unload_ok
+
+
+async def async_setup_entry(hass, config_entry):
+
+    api = BaxiAPI(
+        hass,
+        config_entry.data.get(CONF_USERNAME),
+        config_entry.data.get(CONF_PASSWORD),
+        config_entry.data.get(CONF_PAIR_CODE),
+    )
+    await api.bootstrap()
+    hass.data[PLATFORM] = {DATA_KEY_API: api, DATA_KEY_CONFIG: config_entry.data}
+    register_device(hass, config_entry, api.get_device_information())
+    hass.config_entries.async_setup_platforms(config_entry, PLATFORMS)
+
+    return True
 
 
 async def update_listener(hass, config_entry):
     """Handle options update."""
     await hass.config_entries.async_reload(config_entry.entry_id)
+
+
+def register_device(hass, config_entry, device_info):
+    device_registry = dr.async_get(hass)
+    device_registry.async_get_or_create(
+        config_entry_id=config_entry.entry_id,
+        identifiers={(SERIAL_KEY, device_info.get(SERIAL_KEY, "1234"))},
+        manufacturer=DEVICE_MANUFACTER,
+        name=config_entry.data.get(CONF_NAME),
+        model=device_info.get("name", DEVICE_MODEL),
+        sw_version=device_info.get("softwareVersion", DEFAULT_VERSION),
+        hw_version=device_info.get("hardwareVersion", DEFAULT_VERSION),
+    )

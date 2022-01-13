@@ -8,16 +8,21 @@ DOMAIN = "climate"
 PLATFORM = "baxi_thermostat"
 ISSUE_URL = "https://github.com/vipial1/BAXI_thermostat"
 
+
+# Keys
 STORAGE_VERSION = 1
 STORAGE_KEY = "baxiapi"
-
 DATA_KEY_API = "api"
-DAYA_KEY_CONFIG = "config"
+DATA_KEY_CONFIG = "config"
+SERIAL_KEY = "serial"
+FEATURE_OPERATING_MODE = "operating_mode"
+FEATURE_ENERGY_CONSUMPTION = "energy_consumption"
 
 # Defaults
 DEFAULT_NAME = "Baxi Thermostat"
 DEVICE_MODEL = "TXM"
 DEVICE_MANUFACTER = "Baxi"
+DEFAULT_VERSION = "1.0"
 
 BAXI_PRESET_MANUAL = "manual"
 BAXI_PRESET_SCHEDULE = "schedule"
