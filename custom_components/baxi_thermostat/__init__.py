@@ -75,6 +75,7 @@ def register_device(hass, config_entry, device_info):
         manufacturer=DEVICE_MANUFACTER,
         name=config_entry.data.get(CONF_NAME),
         model=device_info.get("name", DEVICE_MODEL),
-        sw_version=device_info.get("softwareVersion", DEFAULT_VERSION),
-        hw_version=device_info.get("hardwareVersion", DEFAULT_VERSION),
+        sw_version=device_info.get("softwareVersion", DEFAULT_VERSION)
+        #TODO hw_version working on dev but not in prod...no idea why, need to fix
+        #hw_version=device_info.get("hardwareVersion", DEFAULT_VERSION),
     )
