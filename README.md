@@ -1,6 +1,5 @@
 # BAXI THERMOSTAT
 
----
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-41BDF5.svg?style=for-the-badge)](https://github.com/hacs/integration)
 
 This component provides integration with Baxi branded thermostat (**ONLY TESTED WITH [TXM](https://www.baxi.es/productos/termostatos-regulacion/baxi-connect/baxi-connect)**)
