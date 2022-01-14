@@ -102,6 +102,7 @@ class BaxiAPI:
             _LOGGER.error(
                 f"ERROR with {request} request to {url}: {response.status_code}"
             )
+            return None
         return response
 
     async def async_post_request(self, endpoint, payload, headers=BASE_HEADER):
@@ -127,7 +128,8 @@ class BaxiAPI:
         response = await self.hass.async_add_executor_job(
             self._sync_request, "get", endpoint, headers
         )
-        return response.json()
+
+        return response.json() if response else response
 
     async def connection_status(self):
         api_endpoint = self.endpoints["CONNECTION"]
