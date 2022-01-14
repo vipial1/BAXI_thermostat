@@ -1,0 +1,4 @@
+{
+    "name": "BAXI thermostat",
+    "domains": ["climate", "sensor"]
+}
