@@ -69,8 +69,8 @@ class BaxiAPI:
 
         response = await self.async_post_request(endpoint=api_endpoint, payload=payload)
         if not response:
-            logging.error('ERROR logging to BAXI. Perhaps wrong password??')
-            raise Exception('ERROR logging to BAXI. Perhaps wrong password??')
+            logging.error("ERROR logging to BAXI. Perhaps wrong password??")
+            raise Exception("ERROR logging to BAXI. Perhaps wrong password??")
         self.amdatu_token = response.headers.get("amdatu_token")
 
     async def _pair(self):
@@ -86,8 +86,8 @@ class BaxiAPI:
         response = await self.async_post_request(endpoint=api_endpoint, payload=payload)
 
         if not response:
-            logging.error('Error pairing integration with BAXI')
-            raise Exception('Error pairing integration with BAXI')
+            logging.error("Error pairing integration with BAXI")
+            raise Exception("Error pairing integration with BAXI")
 
         token = response.json().get("token", None)
         await self._store_token(token)
@@ -134,6 +134,14 @@ class BaxiAPI:
         response = await self.hass.async_add_executor_job(
             self._sync_request, "get", endpoint, headers
         )
+
+        if not response:
+            # Something failed in the get request, try relogin
+            await self._load_stored_token()
+            await self._login()
+            response = await self.hass.async_add_executor_job(
+                self._sync_request, "get", endpoint, headers
+            )
 
         return response.json() if response else response
 
