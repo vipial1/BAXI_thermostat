@@ -87,6 +87,8 @@ class BaxiEnergyConsumptionSensor(SensorEntity, RestoreEntity):
 
     async def async_update(self):
         consumptions = await self._baxi_api.get_consumptions()
+        if not consumptions:
+            return
         consumption = consumptions.get(self._consumption_type, None)
         if not consumption:
             return

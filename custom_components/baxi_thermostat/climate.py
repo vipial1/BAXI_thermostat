@@ -96,11 +96,11 @@ class BaxiThermostat(ClimateEntity, RestoreEntity):
         status = await self._baxi_api.get_status()
 
         if status:
-            self._attr_current_temperature = status["roomTemperature"]["value"]
-            self._attr_temperature_unit = status["roomTemperature"]["unit"]
-            self._attr_target_temperature = status["roomTemperatureSetpoint"]["value"]
+            self._attr_current_temperature = status.get("roomTemperature", {}).get("value", None)
+            self._attr_temperature_unit = status.get("roomTemperature", {}).get("unit", None)
+            self._attr_target_temperature = status.get("roomTemperatureSetpoint", {}).get("value", None)
             self._attr_preset_mode = preset_mode_baxi_to_ha(
-                status["mode"], status["timeProgram"]
+                status.get("mode", None), status.get("timeProgram", None)
             )
             next_switch = status.get("nextSwitch", None)
             if next_switch:
