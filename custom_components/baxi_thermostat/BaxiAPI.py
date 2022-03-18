@@ -105,7 +105,7 @@ class BaxiAPI:
             raise e
 
         if not response.ok:
-            _LOGGER.error(
+            _LOGGER.warning(
                 f"ERROR with {request} request to {url}: {response.status_code}"
             )
             return None
@@ -135,14 +135,6 @@ class BaxiAPI:
             self._sync_request, "get", endpoint, headers
         )
 
-        if not response:
-            # Something failed in the get request, try relogin
-            await self._load_stored_token()
-            await self._login()
-            response = await self.hass.async_add_executor_job(
-                self._sync_request, "get", endpoint, headers
-            )
-
         return response.json() if response else response
 
     async def connection_status(self):
@@ -150,7 +142,7 @@ class BaxiAPI:
 
         response = await self.async_get_request(api_endpoint)
 
-        return response and response.get("status") == "connected_to_appliance"
+        return response and response.get("status", None) == "connected_to_appliance"
 
     async def _load_capabilities(self):
         api_endpoint = self.endpoints["CAPABILITIES"]
