@@ -121,6 +121,15 @@ class BaxiThermostat(ClimateEntity, RestoreEntity):
             if operating_mode:
                 self._attr_hvac_mode = hvac_mode_baxi_to_ha(operating_mode["mode"])
 
+        if self._baxi_api.is_feature_enabled(FEATURE_WATER_PRESSURE):
+            pressure = await self._baxi_api.get_water_pressure()
+
+            if pressure:
+                water_pressure = pressure.get('waterPressure', {})
+                unit = water_pressure.get('unit', 'bar')
+                value = water_pressure.get('value', '0.0')
+                self._attr_extra_state_attributes["water_pressure"] = f'{value} {unit}'
+
     async def async_set_temperature(self, **kwargs):
         """Set new target temperature."""
         temperature = kwargs.get(ATTR_TEMPERATURE)

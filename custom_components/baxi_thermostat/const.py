@@ -17,6 +17,7 @@ DATA_KEY_CONFIG = "config"
 SERIAL_KEY = "serial"
 FEATURE_OPERATING_MODE = "operating_mode"
 FEATURE_ENERGY_CONSUMPTION = "energy_consumption"
+FEATURE_WATER_PRESSURE = "water_pressure"
 
 # Defaults
 DEFAULT_NAME = "Baxi Thermostat"

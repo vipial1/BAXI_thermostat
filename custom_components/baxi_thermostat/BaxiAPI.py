@@ -170,6 +170,11 @@ class BaxiAPI:
                 self.capabilities.get("producers", {}).get("energyConsumptionUri", None)
                 is not None
             )
+        elif feature == FEATURE_WATER_PRESSURE:
+            return (
+                self.capabilities.get("system", {}).get("waterPressureUri", None)
+                is not None
+            )
         else:
             logging.warning(f"Feature {feature} not enable")
         return False
@@ -230,5 +235,10 @@ class BaxiAPI:
 
     async def get_consumptions(self):
         api_endpoint = self.capabilities["producers"]["energyConsumptionUri"]
+
+        return await self.async_get_request(api_endpoint)
+
+    async def get_water_pressure(self):
+        api_endpoint = self.capabilities["system"]["waterPressureUri"]
 
         return await self.async_get_request(api_endpoint)
